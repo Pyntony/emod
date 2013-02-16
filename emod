@@ -1,0 +1,101 @@
+#!/usr/bin/env python
+#-*-coding:UTF-8-*-
+
+"""emod is a utility for Gentoo Linux based systems which can edit flags of a
+particular ebuild. This was originally developped to avoid forgetting a ">" when
+running "echo app-dummy/example -qt gtk >> /etc/portage/package.use" for
+instance and then overwrite the file. But this also enables to edit already
+existing flags and sorts the lines in alphabetical order."""
+
+from os.path import dirname, isfile
+from sys import stdout, exit
+from argparse import ArgumentParser
+
+__author__  = "Antoine Pinsard"
+__email__   = "antoine.pinsard@member.fsf.org"
+__version__ = "1.0"
+__date__    = "2013-02-14"
+
+class ilist(list):
+    def __contains__(self, value):
+        return value.upper() in [str(val).upper() for val in self]
+
+PORTAGE_FILE = "/etc/portage/package.%(type)s/%(cat)s"
+FTYPES = ilist(['use', 'license', 'keywords', 'accept_keywords'])
+
+parser = ArgumentParser(description="Ease your USE flags edition.",
+    usage="%(prog)s [-h] atom [-E flags] [-D flags] [-P] [-T type]")
+parser.add_argument('atom', type=str, help="[<|>][=]ebuild")
+parser.add_argument('--enable', '-E', type=str, nargs='+', metavar='flag',
+    help="A list of flags to enable for the specified ebuild.")
+parser.add_argument('--disable', '-D', type=str, nargs='+', metavar='flag',
+    help="A list of flags to disable for the specified ebuild.")
+parser.add_argument('--prune', '-P', action='store_true',
+    help="Remove all custom useflags of the specified ebuild.")
+parser.add_argument('--type', '-T', type=str, default="use", choices=FTYPES,
+    help="Specify the type of flag.")
+
+args = parser.parse_args()
+ftype = args.type.lower()
+
+category = args.atom.split('/')[0].translate(None, '<=>')
+PORTAGE_FILE %= {'type': ftype, 'cat': category}
+
+if isfile(PORTAGE_FILE):
+    try:
+        f = open(PORTAGE_FILE)
+        lines = f.readlines()
+        f.close()
+    except IOError:
+        exit("Unable to read %s" % PORTAGE_FILE)
+else:
+    lines = []
+
+# Retrieve the current flags if exists.
+flags = []
+for line in lines:
+    if line.startswith(args.atom + " "):
+        stdout.write("Old line: " + line)
+        flags = line.split()[1:]
+        lines.remove(line)
+        break
+if not flags:
+    print("No custom flags defined for %s." % args.atom)
+
+# Prune flags
+if args.prune:
+    flags = []
+
+# Disable flags
+if args.disable:
+    for flag in args.disable:
+        if flag in flags:
+            flags.remove(flag)
+        else:
+            print("warning: %s is not enabled!" % flag)
+
+# Enable flags
+if args.enable:
+    for flag in args.enable:
+        if flag in flags:
+            print("warning: %s is already enabled!" % flag)
+        else:
+            flags.append(flag)
+
+# Update the line
+if flags:
+    flags.sort()
+    line = args.atom + ' ' + ' '.join(flags) + '\n'
+    stdout.write("New line: " + line)
+    lines.append(line)
+    lines.sort()
+
+# Save changes:
+try:
+    f = open(PORTAGE_FILE, 'w')
+    f.write(''.join(lines))
+    f.close()
+except IOError:
+    exit("Unable to write in %s, are you root? Is %s a directory?"
+        % (PORTAGE_FILE, dirname(PORTAGE_FILE)))
+
