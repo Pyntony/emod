@@ -57,11 +57,11 @@ else:
 # Read the current file if exists.
 if os.path.exists(PKG_FILE):
     try:
-        f = open(PORTAGE_FILE)
+        f = open(PKG_FILE)
         lines = f.readlines()
         f.close()
     except IOError:
-        sys.exit("Unable to read %s" % PORTAGE_FILE)
+        sys.exit("Unable to read %s" % PKG_FILE)
 else:
     lines = []
 
