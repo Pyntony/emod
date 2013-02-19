@@ -24,7 +24,9 @@ Note 2: For convenience, files are supposed to be well-written when emod is run.
 
 """
 
-import os, sys
+import os, re, sys
+from shutil import rmtree
+
 from argparse import ArgumentParser
 
 __author__  = "Antoine Pinsard"
@@ -93,7 +95,34 @@ def file_to_directory(pkg_file):
 def directory_to_file(pkg_file):
     """Convert `pkg_file` from a directory to a file."""
     # Hopefully we can trust ourselves and assume `pkg_file` is a directory.
-    pass
+    cat_pattern = re.compile("^([a-z]+-[a-z]+|virtual)$")
+    rules = ""
+    for category in os.listdir(pkg_file):
+        if cat_pattern.match(category):
+            path = os.path.join(pkg_file, category)
+            try:
+                with open(path, 'r') as f:
+                    rules += f.read()
+            except IOError:
+                sys.exit("Unable to read %s" % path)
+
+    # Create the temporary file.
+    n = 0
+    while os.path.exists("%s.bkp.%d" % (pkg_file, n)):
+        n += 1
+    tmp_file = "%s.tmp.%d" % (pkg_file, n)
+    try:
+        with open(tmp_file, 'w') as f:
+            f.write(rules)
+    except IOError:
+        sys.exit("Unable to create %s, are you root?" % tmp_file)
+
+    # Remove the old directory and rename the file.
+    try:
+        rmtree(pkg_file)
+        os.rename(tmp_file, pkg_file)
+    except OSError:
+        sys.exit("Failed to replace the current directory, are you root?")
 
 PKG_FILE = "/etc/portage/package.%s"
 
@@ -137,7 +166,7 @@ pkg_type  = args.type.lower()
 pkg_style = args.style.lower()
 PKG_FILE %= pkg_type
 
-# First determine if package.{pkg_type} exists and whether it is a file or a
+# First determine if PKG_FILE exists and whether it is a file or a
 # directory.
 cur_pkg_style = 'default'
 if os.path.exists(PKG_FILE):
@@ -227,10 +256,6 @@ else:
         sys.stdout.write("New rule: " + rule)
         rules.append(rule)
         rules.sort()
-
-# TODO Check file validity according to `man portage(5)`.
-# if args.check:
-#   ...
 
 # Save changes
 try:

@@ -7,14 +7,14 @@ Tools for Funtoo and Gentoo
 
 ## TODO
 ### emod
- * Write the manual
- * Write the tests
- * Write the ebuild
- * Run the tests
- * Implement --migrate-keywords
- * Implement directory\_to\_file function
- * Check rules validity according to man portage(5)
- * Optimisation
+ * Write the tests (mandatory)
+ * Run the tests (mandatory)
+ * Write the manual (mandatory)
+ * Write the ebuild (mandatory)
+ * Review output messages (important)
+ * Optimisation (can be done afterward)
+ * Implement --migrate-keywords (can be done afterward)
+ * Check rules validity according to man portage(5) (can be done afterward)
 
-*Please note that this TODO list is not sorted by priority or anything else.*
+*Note: the TODO list is sorted by descending priority level.*
 
