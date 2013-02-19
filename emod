@@ -1,122 +1,232 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #-*-coding:UTF-8-*-
 
 """emod is a utility for Gentoo Linux based systems which can edit flags of a
 particular ebuild. This was originally developped to avoid forgetting a ">" when
 running "echo app-dummy/example -qt gtk >> /etc/portage/package.use" for
 instance and then overwrite the file. But this also enables to edit already
-existing flags and sorts the lines in alphabetical order."""
+existing flags and sorts the lines in alphabetical order.
+
+This tool was written with the following aims:
+(1) The tool serves the user rather than the user serving the tool ;
+(2) The tool is easy to maintain ;
+(3) The tool is optimized.
+
+If you think that any of these is not respected, feel free to let me know.
+Please don't hesitate to improve it as well, but keep these aims in mind!
+
+Note: As I didn't find any name for the following, I called:
+    a rule: a line of a package.* file.
+    a flag: an entitie that follows the atom in a rule.
+            Namely: use flags, keywords, licenses, conf files and properties.
+
+Note 2: For convenience, files are supposed to be well-written when emod is run.
+
+"""
 
 import os, sys
 from argparse import ArgumentParser
 
 __author__  = "Antoine Pinsard"
 __email__   = "antoine.pinsard@member.fsf.org"
-__version__ = "1.1"
-__date__    = "2013-02-17"
+__version__ = "1.2"
+__date__    = "2013-02-19"
 
 class cilist(list):
     """Case insensitive list."""
     def __contains__(self, value):
         return value.upper() in [str(val).upper() for val in self]
 
+# There are two possible structures for /etc/portage/package.* files
+# It can either be a file containing all rules or a directory containing
+# files named after the package category, containing themselves all rules
+# for packages in the named category.
+# As we don't want to force using a structure rather than the other (aim (1)),
+# emod enables to choose the one to use with option --style.
+# file_to_directory and directory_to_file functions enable to do the conversion
+# if needed.
+
+def file_to_directory(pkg_file):
+    """Convert `pkg_file` from a file to a directory."""
+    # Hopefully we can trust ourselves and assume `pkg_file` is a file.
+    try:
+        with open(pkg_file, 'r') as f:
+            rules = f.readlines()
+    except IOError:
+        sys.exit("Unable to read %s" % pkg_file)
+
+    # Map the rules by categories.
+    categories = {}
+    for rule in rules:
+        category = rule.split('/')[0].translate(None, '<=>')
+        if category in categories:
+            categories[category] += rule
+        else:
+            categories[category] = rule
+
+    # Create the directory.
+    # We first create a temporary directory not to erase the current file in
+    # case of a crash or else.
+    n = 0
+    while os.path.exists("%s.bkp.%d" % (pkg_file, n)):
+        n += 1
+    tmp_dir = "%s.tmp.%d" % (pkg_file, n)
+    try:
+        os.mkdir(tmpdir, mode=0o755)
+    except OSError:
+        sys.exit("Unable to create directory %s, are you root?" % tmp_dir)
+    for name,rules in categories.items():
+        path = os.path.join(tmp_dir, name)
+        try:
+            with open(path, 'w') as f:
+                f.write(rules)
+        except IOError:
+            sys.exit("Unable to create %s, are you root?" % path)
+
+    # Remove the old file and rename the directory.
+    try:
+        os.remove(pkg_file)
+        os.rename(tmp_dir, pkg_file)
+    except OSError:
+        sys.exit("Failed to replace the current file, are you root?")
+
+def directory_to_file(pkg_file):
+    """Convert `pkg_file` from a directory to a file."""
+    # Hopefully we can trust ourselves and assume `pkg_file` is a directory.
+    pass
+
 PKG_FILE = "/etc/portage/package.%s"
+
 PKG_TYPES = cilist(['accept_keywords', 'env', 'keywords', 'license', 'mask',
     'properties', 'unmask', 'use'])
 
+PKG_STYLES = cilist(['default', 'directory', 'file'])
+"""Available options for the --style option.
+
+Read a few lines earlier to get more detail.
+
+default:
+    Will use the existing structure. If the package.* file doesn't exist yet,
+    the default behavior will be --style=directory.
+directory:
+    Will use the directory structure.
+file:
+    Will use the file structure.
+
+"""
+
 # Parse arguments
-parser = ArgumentParser(description="Ease your /etc/portage/package.* edition.",
-    usage="%(prog)s [-h] atom [-e flags] [-d flags] [-p] [-t type]")
+parser = ArgumentParser(description="Ease your /etc/portage/package.* edition.")
 parser.add_argument('atom', type=str, help="[<|>][=]ebuild")
 parser.add_argument('--enable', '-e', type=str, nargs='+', metavar='flag',
-    help="A list of flags to enable for the specified ebuild.")
+    help="A list of flags to enable for the specified atom.")
 parser.add_argument('--disable', '-d', type=str, nargs='+', metavar='flag',
-    help="A list of flags to disable for the specified ebuild.")
+    help="A list of flags to disable for the specified atom.")
 parser.add_argument('--prune', '-p', action='store_true',
-    help="Remove all custom useflags of the specified ebuild.")
+    help="Remove the custom rule of the specified atom.")
 parser.add_argument('--type', '-t', type=str, default="use", choices=PKG_TYPES,
-    help="Specify the type of package file (default is use).")
+    help="Specify the type of rule (default is use).")
+parser.add_argument('--style', type=str, default="default", choices=PKG_STYLES,
+    help="Enable to force working with directory or file.")
+parser.add_argument('--migrate-keywords', action='store_true',
+    help="Migrate package.keywords to package.accept_keywords.")
 args = parser.parse_args()
 
 category  = args.atom.split('/')[0].translate(None, '<=>')
 pkg_type  = args.type.lower()
+pkg_style = args.style.lower()
 PKG_FILE %= pkg_type
 
-# Determine whether package.{pkg_type} is a file or a directory.
-# If it doesn't exist, create it as a directory.
+# First determine if package.{pkg_type} exists and whether it is a file or a
+# directory.
+cur_pkg_style = 'default'
 if os.path.exists(PKG_FILE):
     if os.path.isdir(PKG_FILE):
+        cur_pkg_style = 'directory'
+    else:
+        cur_pkg_style = 'file'
+
+# Determine if it needs a conversion.
+if cur_pkg_style == 'directory' and pkg_style == 'file':
+    directory_to_file(PKG_FILE)
+elif cur_pkg_style == 'file' and pkg_style == 'directory':
+    file_to_directory(PKG_FILE)
+elif pkg_style == 'default':
+    if cur_pkg_style == 'file':
+        pkg_style = 'file'
+    else:
+        pkg_style = 'directory'
+
+# Switch to the right file if PKG_FILE is a directory
+if pkg_style == 'directory':
+    if not os.path.exists(PKG_FILE):
+        try:
+            os.mkdir(PKG_FILE, mode=0o755)
+        except OSError:
+            sys.exit("Unable to create directory %s, are you root?" % PKG_FILE)
         PKG_FILE = os.path.join(PKG_FILE, category)
-else:
-    try:
-        os.mkdir(PKG_FILE, mode=0755)
-    except OSError:
-        sys.exit("Unable to create directory %s. Are you root?")
-    PKG_FILE = os.path.join(PKG_FILE, category)
 
 # Read the current file if exists.
+rules = []
 if os.path.exists(PKG_FILE):
     try:
-        f = open(PKG_FILE)
-        lines = f.readlines()
-        f.close()
+        with open(PKG_FILE, 'r') as f:
+            rules = f.readlines()
     except IOError:
         sys.exit("Unable to read %s" % PKG_FILE)
-else:
-    lines = []
 
 if pkg_type in ['mask', 'unmask']:
-    # Handle particular case of package.(un)mask that do not accept arguments.
+    # Handle particular case of package.(un)mask that do not accept flags.
     if args.prune:
         try:
-            lines.remove(args.atom)
+            rules.remove(args.atom)
         except ValueError:
             sys.exit("%s is not %sed." % (args.atom, pkg_type))
     else:
-        if args.atom in lines:
+        if args.atom in rules:
             sys.exit("%s is already %sed." % (args.atom, pkg_type))
         else:
-            lines.append(args.atom)
-            lines.sort()
+            rules.append(args.atom)
+            rules.sort()
 else:
-    # Retrieve the current arguments (flags, properties, keywords...) if exist.
-    arguments = []
-    for line in lines:
-        if line.startswith(args.atom + " "):
-            sys.stdout.write("Old line: " + line)
-            arguments = line.split()[1:]
-            lines.remove(line) # We remove the line to update it.
+    # Retrieve the current flags if the rule exist.
+    flags = []
+    for rule in rules:
+        if rule.startswith(args.atom + " "):
+            sys.stdout.write("Old rule: " + rule)
+            flags = rule.split()[1:]
+            rules.remove(rule) # We remove the rule to update it.
             break
-    if not arguments:
+    if not flags:
         print("No argument currently defined for %s." % args.atom)
     
-    # Prune arguments
+    # 1.Prune flags
     if args.prune:
-        arguments = []
+        flags = []
 
-    # Disable arguments
+    # 2.Disable flags
     if args.disable:
-        for argument in args.disable:
+        for flag in args.disable:
             try:
-                arguments.remove(argument)
+                flags.remove(flag)
             except ValueError:
-                print("warning: %s is not enabled!" % argument)
+                print("warning: %s is not enabled!" % flag)
 
-    # Enable arguments
+    # 3.Enable flags
     if args.enable:
-        for argument in args.enable:
-            if argument in arguments:
-                print("warning: %s is already enabled!" % argument)
+        for flag in args.enable:
+            if flag in flags:
+                print("warning: %s is already enabled!" % flag)
             else:
-                arguments.append(argument)
+                flags.append(flag)
 
-    # Update the line
-    if arguments:
-        arguments.sort()
-        line = args.atom + ' ' + ' '.join(arguments) + '\n'
-        sys.stdout.write("New line: " + line)
-        lines.append(line)
-        lines.sort()
+    # Update the rule
+    if flags:
+        flags.sort()
+        rule = args.atom + ' ' + ' '.join(flags) + '\n'
+        sys.stdout.write("New rule: " + rule)
+        rules.append(rule)
+        rules.sort()
 
 # TODO Check file validity according to `man portage(5)`.
 # if args.check:
@@ -124,9 +234,8 @@ else:
 
 # Save changes
 try:
-    f = open(PKG_FILE, 'w')
-    f.write(''.join(lines))
-    f.close()
+    with open(PKG_FILE, 'w') as f:
+        f.write(''.join(rules))
 except IOError:
     sys.exit("Unable to write in %s, are you root?" % PKG_FILE)
 
