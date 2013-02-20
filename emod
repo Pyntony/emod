@@ -157,8 +157,6 @@ parser.add_argument('--type', '-t', type=str, default="use", choices=PKG_TYPES,
     help="Specify the type of rule (default is use).")
 parser.add_argument('--style', type=str, default="default", choices=PKG_STYLES,
     help="Enable to force working with directory or file.")
-parser.add_argument('--migrate-keywords', action='store_true',
-    help="Migrate package.keywords to package.accept_keywords.")
 args = parser.parse_args()
 
 category  = args.atom.split('/')[0].translate(None, '<=>')

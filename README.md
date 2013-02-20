@@ -14,7 +14,6 @@ Tools for Funtoo and Gentoo
  * Review output messages (important)
  * Correct English expression (important, need help)
  * Optimisation (can be done afterward)
- * Implement --migrate-keywords (can be done afterward)
  * Check rules validity according to man portage(5) (can be done afterward)
 
 *Note: the TODO list is sorted by descending priority level.*
