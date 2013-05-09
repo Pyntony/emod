@@ -50,22 +50,6 @@ class cilist(list):
 
 def file_to_directory(pkg_file):
     """Convert `pkg_file` from a file to a directory."""
-    # Hopefully we can trust ourselves and assume `pkg_file` is a file.
-    try:
-        with open(pkg_file, 'r') as f:
-            rules = f.readlines()
-    except IOError:
-        sys.exit("Unable to read %s" % pkg_file)
-
-    # Map the rules by categories.
-    categories = {}
-    for rule in rules:
-        category = rule.split('/')[0].translate(None, '<=>')
-        if category in categories:
-            categories[category] += rule
-        else:
-            categories[category] = rule
-
     # Create the directory.
     # We first create a temporary directory not to erase the current file in
     # case of a crash or else.
@@ -73,17 +57,10 @@ def file_to_directory(pkg_file):
     while os.path.exists("%s.bkp.%d" % (pkg_file, n)):
         n += 1
     tmp_dir = "%s.tmp.%d" % (pkg_file, n)
-    try:
-        os.mkdir(tmpdir, mode=0o755)
-    except OSError:
-        sys.exit("Unable to create directory %s, are you root?" % tmp_dir)
-    for name,rules in categories.items():
-        path = os.path.join(tmp_dir, name)
-        try:
-            with open(path, 'w') as f:
-                f.write(rules)
-        except IOError:
-            sys.exit("Unable to create %s, are you root?" % path)
+    os.mkdir(tmp_dir, 0o755)
+
+    rules = read_rules(pkg_file)
+    save_rules(tmp_dir, rules)
 
     # Remove the old file and rename the directory.
     try:
@@ -92,39 +69,69 @@ def file_to_directory(pkg_file):
     except OSError:
         sys.exit("Failed to replace the current file, are you root?")
 
-def directory_to_file(pkg_file):
-    """Convert `pkg_file` from a directory to a file."""
-    # Hopefully we can trust ourselves and assume `pkg_file` is a directory.
-    cat_pattern = re.compile("^([a-z]+-[a-z]+|virtual)$")
-    rules = ""
-    for category in os.listdir(pkg_file):
-        if cat_pattern.match(category):
-            path = os.path.join(pkg_file, category)
-            try:
-                with open(path, 'r') as f:
-                    rules += f.read()
-            except IOError:
-                sys.exit("Unable to read %s" % path)
-
+def directory_to_file(pkg_dir):
+    """Convert `pkg_dir` from a directory to a file."""
     # Create the temporary file.
     n = 0
-    while os.path.exists("%s.bkp.%d" % (pkg_file, n)):
+    while os.path.exists("%s.bkp.%d" % (pkg_dir, n)):
         n += 1
-    tmp_file = "%s.tmp.%d" % (pkg_file, n)
-    try:
-        with open(tmp_file, 'w') as f:
-            f.write(rules)
-    except IOError:
-        sys.exit("Unable to create %s, are you root?" % tmp_file)
+    tmp_file = "%s.tmp.%d" % (pkg_dir, n)
+    # Create the temporary file
+    open(tmp_file, 'a').close()
+
+    rules = read_rules(pkg_dir)
+    save_rules(tmp_file, rules)
 
     # Remove the old directory and rename the file.
     try:
-        rmtree(pkg_file)
-        os.rename(tmp_file, pkg_file)
+        rmtree(pkg_dir)
+        os.rename(tmp_file, pkg_dir)
     except OSError:
         sys.exit("Failed to replace the current directory, are you root?")
 
-PKG_FILE = "/etc/portage/package.%s"
+def read_rules(pkg_file):
+    """Read the rules of a package file depending on weather it is a file or directory."""
+    if not os.path.exists(pkg_file):
+        raise IOError('Cannot find %s' % pkg_file)
+
+    # the rules are taken as is if working with a file.
+    if os.path.isfile(pkg_file):
+        with open(pkg_file, 'r', encoding='utf-8') as f:
+            return f.readlines()
+
+    # directories go by another layout with seperate files for categories
+    # with each category file containing rules for atoms that fall into
+    # that category
+    if os.path.isdir(pkg_file):
+        rules = []
+        for category in os.listdir(pkg_file):
+            with open(os.path.join(pkg_file, category), 'r') as f:
+                rules += f.readlines()
+        return rules
+
+def save_rules(pkg_file, rules):
+    """Save rules depending on weather it is a file or directory."""
+
+    # Save according to the directory format if working with directories.
+    if os.path.isdir(pkg_file):
+        # seperate categories and atoms, then build a dictionary in the
+        # {category:"category/atom\ncategory/atom2\n"} format for writing
+        categories = {}
+        for rule in rules:
+            category, atom = rule.split('/')
+            if category in categories:
+               categories[category] += '/'.join((category,atom))
+            else:
+               categories[category] = '/'.join((category,atom))
+        for category in categories:
+            with open(os.path.join(pkg_file, category), 'w', encoding='utf-8') as f:
+                f.write(categories[category])
+
+
+    # Save normaly if working with a file.
+    elif os.path.isfile(pkg_file):
+        with open(pkg_file, 'w', encoding='utf-8') as f:
+            f.write(''.join(rules))
 
 PKG_TYPES = cilist(['accept_keywords', 'env', 'keywords', 'license', 'mask',
     'properties', 'unmask', 'use'])
@@ -157,12 +164,15 @@ parser.add_argument('--type', '-t', type=str, default="use", choices=PKG_TYPES,
     help="Specify the type of rule (default is use).")
 parser.add_argument('--style', type=str, default="default", choices=PKG_STYLES,
     help="Enable to force working with directory or file.")
+parser.add_argument('--pkg-file', type=str, dest='pkg_file',
+    default='/etc/portage/package',
+    help='Specify a package file/directory (for testing/debugging)')
 args = parser.parse_args()
 
-category  = args.atom.split('/')[0].translate(None, '<=>')
+category  = args.atom.split('/')[0]
 pkg_type  = args.type.lower()
 pkg_style = args.style.lower()
-PKG_FILE %= pkg_type
+PKG_FILE = '.'.join((args.pkg_file, pkg_type))
 
 # First determine if PKG_FILE exists and whether it is a file or a
 # directory.
@@ -194,13 +204,7 @@ if pkg_style == 'directory':
         PKG_FILE = os.path.join(PKG_FILE, category)
 
 # Read the current file if exists.
-rules = []
-if os.path.exists(PKG_FILE):
-    try:
-        with open(PKG_FILE, 'r') as f:
-            rules = f.readlines()
-    except IOError:
-        sys.exit("Unable to read %s" % PKG_FILE)
+rules = read_rules(PKG_FILE)
 
 if pkg_type in ['mask', 'unmask']:
     # Handle particular case of package.(un)mask that do not accept flags.
@@ -226,7 +230,7 @@ else:
             break
     if not flags:
         print("No argument currently defined for %s." % args.atom)
-    
+
     # 1.Prune flags
     if args.prune:
         flags = []
@@ -257,8 +261,6 @@ else:
 
 # Save changes
 try:
-    with open(PKG_FILE, 'w') as f:
-        f.write(''.join(rules))
+    save_rules(PKG_FILE, rules)
 except IOError:
     sys.exit("Unable to write in %s, are you root?" % PKG_FILE)
-
