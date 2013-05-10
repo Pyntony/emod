@@ -57,7 +57,11 @@ def file_to_directory(pkg_file):
     while os.path.exists("%s.bkp.%d" % (pkg_file, n)):
         n += 1
     tmp_dir = "%s.tmp.%d" % (pkg_file, n)
-    os.mkdir(tmp_dir, 0o755)
+    try:
+        os.mkdir(tmp_dir, 0o755)
+    except OSError:
+        sys.exit('Unable to create directory %s, are you root?' % tmp_dir)
+
 
     rules = read_rules(pkg_file)
     save_rules(tmp_dir, rules)
@@ -77,7 +81,10 @@ def directory_to_file(pkg_dir):
         n += 1
     tmp_file = "%s.tmp.%d" % (pkg_dir, n)
     # Create the temporary file
-    open(tmp_file, 'a').close()
+    try:
+        open(tmp_file, 'a').close()
+    except IOError:
+        sys.exit('Unable to create file %s, are you root?' % tmp_file)
 
     rules = read_rules(pkg_dir)
     save_rules(tmp_file, rules)
@@ -164,15 +171,22 @@ parser.add_argument('--type', '-t', type=str, default="use", choices=PKG_TYPES,
     help="Specify the type of rule (default is use).")
 parser.add_argument('--style', type=str, default="default", choices=PKG_STYLES,
     help="Enable to force working with directory or file.")
-parser.add_argument('--pkg-file', type=str, dest='pkg_file',
+parser.add_argument('--pkg-file', type=str, dest='pkg_file', metavar='file',
     default='/etc/portage/package',
     help='Specify a package file/directory (for testing/debugging)')
 args = parser.parse_args()
 
 category  = args.atom.split('/')[0]
-pkg_type  = args.type.lower()
 pkg_style = args.style.lower()
-PKG_FILE = '.'.join((args.pkg_file, pkg_type))
+
+# Detect the package type if the full path is given ex (/etc/portage/package.use)
+extension = os.path.splitext(args.pkg_file)[-1][1:] # grab the extension
+if extension in PKG_TYPES:
+    pkg_type = extension
+    PKG_FILE = args.pkg_file
+else:
+    pkg_type  = args.type.lower()
+    PKG_FILE = '.'.join((args.pkg_file, pkg_type))
 
 # First determine if PKG_FILE exists and whether it is a file or a
 # directory.
@@ -203,7 +217,6 @@ if pkg_style == 'directory':
             sys.exit("Unable to create directory %s, are you root?" % PKG_FILE)
         PKG_FILE = os.path.join(PKG_FILE, category)
 
-# Read the current file if exists.
 rules = read_rules(PKG_FILE)
 
 if pkg_type in ['mask', 'unmask']:
