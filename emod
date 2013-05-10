@@ -167,7 +167,7 @@ parser.add_argument('--disable', '-d', type=str, nargs='+', metavar='flag',
     help="A list of flags to disable for the specified atom.")
 parser.add_argument('--prune', '-p', action='store_true',
     help="Remove the custom rule of the specified atom.")
-parser.add_argument('--type', '-t', type=str, default="use", choices=PKG_TYPES,
+parser.add_argument('--type', '-t', type=str, choices=PKG_TYPES,
     help="Specify the type of rule (default is use).")
 parser.add_argument('--style', type=str, default="default", choices=PKG_STYLES,
     help="Enable to force working with directory or file.")
@@ -179,14 +179,18 @@ args = parser.parse_args()
 category  = args.atom.split('/')[0]
 pkg_style = args.style.lower()
 
-# Detect the package type if the full path is given ex (/etc/portage/package.use)
-extension = os.path.splitext(args.pkg_file)[-1][1:] # grab the extension
-if extension in PKG_TYPES:
-    pkg_type = extension
-    PKG_FILE = args.pkg_file
+# Detect the package type.
+if args.type: # if the user specifies then no works needs to be done
+    pkg_type = args.type
+    PKG_FILE = '.'.join((args.pkg_file,pkg_type))
 else:
-    pkg_type  = args.type.lower()
-    PKG_FILE = '.'.join((args.pkg_file, pkg_type))
+    extension = os.path.splitext(args.pkg_file)[-1][1:] # grab the extension
+    if extension in PKG_TYPES:
+        pkg_type = extension
+        PKG_FILE = args.pkg_file
+    else:
+        sys.exit('Unable to detect package type, please specify using the '\
+                '--type argument')
 
 # First determine if PKG_FILE exists and whether it is a file or a
 # directory.
