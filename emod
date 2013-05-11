@@ -176,7 +176,7 @@ parser.add_argument('--pkg-file', type=str, dest='pkg_file', metavar='file',
     help='Specify a package file/directory (for testing/debugging)')
 args = parser.parse_args()
 
-category  = args.atom.split('/')[0]
+category  = re.sub('[<=>]', '', args.atom.split('/')[0])
 pkg_style = args.style.lower()
 
 # Detect the package type.
