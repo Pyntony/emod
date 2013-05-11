@@ -7,6 +7,8 @@ Tools for Funtoo and Gentoo
 
 ## TODO
 ### emod
+ * Fix the translate() issue (urgent)
+ * Replace argparse by plac
  * Write the tests (mandatory)
  * Run the tests (mandatory)
  * Write the manual (mandatory)
