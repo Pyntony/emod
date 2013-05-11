@@ -7,7 +7,6 @@ Tools for Funtoo and Gentoo
 
 ## TODO
 ### emod
- * Fix the translate() issue (urgent)
  * Write the tests (mandatory)
  * Run the tests (mandatory)
  * Write the manual (mandatory)
