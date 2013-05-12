@@ -121,7 +121,10 @@ def read_rules(pkg_file):
         rules = []
         for category in os.listdir(pkg_file):
             with open(os.path.join(pkg_file, category), 'r') as f:
-                rules += f.readlines()
+                for line in f.readlines():
+                    if not line.isspace() and not line.startswith("#"):
+                        rules.append(line)
+        rules.sort()
         return rules
 
 def save_rules(pkg_file, rules):
