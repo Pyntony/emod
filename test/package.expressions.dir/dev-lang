@@ -1,0 +1,13 @@
+# this is a comment
+dev-lang/perl:*
+
+dev-lang/perl:0/5.12
+
+dev-lang/perl:0/5.12=
+
+# another comment
+
+
+dev-lang/perl:0=
+
+dev-lang/perl:=

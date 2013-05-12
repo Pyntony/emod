@@ -1,0 +1,4 @@
+=x11-libs/qt-3.3*:3
+>=x11-libs/qt-3.3.8:3
+x11-libs/qt:3
+~x11-libs/qt-3.3.8:3

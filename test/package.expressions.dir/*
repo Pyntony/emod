@@ -1,0 +1,10 @@
+# this is a comment
+*/*
+
+*/*::gentoo
+
+*/zlib
+
+=*/*-*9999*
+
+=*/*-*_beta*
