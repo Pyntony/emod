@@ -2,6 +2,14 @@
 # -*- coding: UTF-8 -*-
 
 import unittest
+import sys
+import os.path
+
+# Assuming that the test directory is inside the emod directory, this will allow
+# emod to be imported if the script is run either from the emod directory
+# (testing/testcase.py) or from the testing directory.
+emod_path = os.path.sep.join(sys.path[0].split(os.path.sep)[:-1])
+sys.path.append(emod_path)
 import emod
 
 class cilist(unittest.TestCase):
