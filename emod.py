@@ -223,7 +223,7 @@ if __name__ == '__main__':
     if pkg_style == 'directory':
         if not os.path.exists(PKG_FILE):
             try:
-                os.mkdir(PKG_FILE, mode=0o755)
+                os.mkdir(PKG_FILE, 0o755)
             except OSError:
                 sys.exit("Unable to create directory %s, are you root?" % PKG_FILE)
             PKG_FILE = os.path.join(PKG_FILE, category)
