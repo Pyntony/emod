@@ -23,58 +23,67 @@ class cilist(unittest.TestCase):
             self.assertTrue(item in input)
 
 class read_rules(unittest.TestCase):
-    def test_read_rules_expr(self):
-           """read_rules must return valid output"""
-           infile = 'package.expressions'
-           out = ['!!<sys-apps/portage-2.1.4_rc1\n',
-                  '!=net-fs/samba-2*\n',
-                  '!app-text/dos2unix\n',
-                  '*/*\n',
-                  '*/*::gentoo\n',
-                  '*/zlib\n',
-                  '<=media-libs/libgd-1.6\n',
-                  '<media-libs/libgd-1.6\n',
-                  '=*/*-*9999*\n',
-                  '=*/*-*_beta*\n',
-                  '=dev-libs/glib-2*\n',
-                  '=media-libs/libgd-1.6\n',
-                  '=x11-libs/qt-3.3*:3\n',
-                  '>=media-libs/libgd-1.6\n',
-                  '>=x11-libs/qt-3.3.8:3\n',
-                  '>media-libs/libgd-1.6\n',
-                  'dev-lang/perl:*\n',
-                  'dev-lang/perl:0/5.12\n',
-                  'dev-lang/perl:0/5.12=\n',
-                  'dev-lang/perl:0=\n',
-                  'dev-lang/perl:=\n',
-                  'dev-libs/glib:*\n',
-                  'dev-libs/glib:2/2.30\n',
-                  'dev-libs/glib:2/2.30=\n',
-                  'dev-libs/glib:2=\n',
-                  'dev-libs/glib:=\n',
-                  'dev-libs/icu:*\n',
-                  'dev-libs/icu:0/0\n',
-                  'dev-libs/icu:0/0=\n',
-                  'dev-libs/icu:0/49\n',
-                  'dev-libs/icu:0/49=\n',
-                  'dev-libs/icu:0=\n',
-                  'dev-libs/icu:=\n',
-                  'kde-base/kdelibs::kde-testing\n',
-                  'net-*/*\n',
-                  'net-im/empathy::gnome\n',
-                  'net-misc/dhcp\n',
-                  'net-misc/dhcp-3.0_p2\n',
-                  'sys-apps/*\n',
-                  'sys-apps/sed\n',
-                  'sys-apps/sed-4.0.5\n',
-                  'sys-apps/sed::gentoo\n',
-                  'sys-libs/zlib\n',
-                  'sys-libs/zlib-1.1.4-r1\n',
-                  'x11-libs/qt:3\n',
-                  '~net-libs/libnet-1.0.2a\n',
-                  '~x11-libs/qt-3.3.8:3\n']
+    out = ['!!<sys-apps/portage-2.1.4_rc1\n',
+    # This is the output that read_rules() should give for both file and directory
+    # structures
+           '!=net-fs/samba-2*\n',
+           '!app-text/dos2unix\n',
+           '*/*\n',
+           '*/*::gentoo\n',
+           '*/zlib\n',
+           '<=media-libs/libgd-1.6\n',
+           '<media-libs/libgd-1.6\n',
+           '=*/*-*9999*\n',
+           '=*/*-*_beta*\n',
+           '=dev-libs/glib-2*\n',
+           '=media-libs/libgd-1.6\n',
+           '=x11-libs/qt-3.3*:3\n',
+           '>=media-libs/libgd-1.6\n',
+           '>=x11-libs/qt-3.3.8:3\n',
+           '>media-libs/libgd-1.6\n',
+           'dev-lang/perl:*\n',
+           'dev-lang/perl:0/5.12\n',
+           'dev-lang/perl:0/5.12=\n',
+           'dev-lang/perl:0=\n',
+           'dev-lang/perl:=\n',
+           'dev-libs/glib:*\n',
+           'dev-libs/glib:2/2.30\n',
+           'dev-libs/glib:2/2.30=\n',
+           'dev-libs/glib:2=\n',
+           'dev-libs/glib:=\n',
+           'dev-libs/icu:*\n',
+           'dev-libs/icu:0/0\n',
+           'dev-libs/icu:0/0=\n',
+           'dev-libs/icu:0/49\n',
+           'dev-libs/icu:0/49=\n',
+           'dev-libs/icu:0=\n',
+           'dev-libs/icu:=\n',
+           'kde-base/kdelibs::kde-testing\n',
+           'net-*/*\n',
+           'net-im/empathy::gnome\n',
+           'net-misc/dhcp\n',
+           'net-misc/dhcp-3.0_p2\n',
+           'sys-apps/*\n',
+           'sys-apps/sed\n',
+           'sys-apps/sed-4.0.5\n',
+           'sys-apps/sed::gentoo\n',
+           'sys-libs/zlib\n',
+           'sys-libs/zlib-1.1.4-r1\n',
+           'x11-libs/qt:3\n',
+           '~net-libs/libnet-1.0.2a\n',
+           '~x11-libs/qt-3.3.8:3\n']
 
-           self.assertTrue(emod.read_rules(infile) == out)
+    maxDiff = None # disable line limit on diffs
+
+    def test_read_rules_expr_file(self):
+           """read_rules must return valid output"""
+           infile = 'package.expressions.file'
+           self.assertEqual(emod.read_rules(infile), self.out)
+
+    def test_read_rules_expr_dir(self):
+        """read_rules must return valid output for directory."""
+        infile = 'package.expressions.dir'
+        self.assertEqual(emod.read_rules(infile), self.out)
 
 if __name__ == '__main__':
     unittest.main()
