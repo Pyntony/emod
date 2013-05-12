@@ -149,7 +149,7 @@ def save_rules(pkg_file, rules):
     # Save normaly if working with a file.
     elif os.path.isfile(pkg_file):
         with open(pkg_file, 'w', encoding='utf-8') as f:
-            f.write(''.join(rules))
+            f.write(''.join(sorted(rules)))
 
 PKG_TYPES = cilist(['accept_keywords', 'env', 'keywords', 'license', 'mask',
     'properties', 'unmask', 'use'])
@@ -187,7 +187,6 @@ parser.add_argument('--pkg-file', type=str, dest='pkg_file', metavar='file',
     help='Specify a package file/directory (for testing/debugging)')
 
 if __name__ == '__main__':
-
     args = parser.parse_args()
 
     category  = re.sub('[<=>]', '', args.atom.split('/')[0])
