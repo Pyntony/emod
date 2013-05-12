@@ -104,7 +104,15 @@ def read_rules(pkg_file):
     # the rules are taken as is if working with a file.
     if os.path.isfile(pkg_file):
         with open(pkg_file, 'r', encoding='utf-8') as f:
-            return f.readlines()
+            rules = []
+            # filter empty lines and comments
+            for line in f.readlines():
+                if not line.isspace() and not line.startswith("#"):
+                    rules.append(line)
+            # sort the results before returning them
+            rules.sort()
+            return rules
+
 
     # directories go by another layout with seperate files for categories
     # with each category file containing rules for atoms that fall into
