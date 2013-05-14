@@ -136,11 +136,12 @@ def save_rules(pkg_file, rules):
         # {category:"category/ebuild\ncategory/ebuild2\n"} format for writing
         categories = {}
         for rule in rules:
-            category, ebuild = rule.split('/')
+            category, ebuild = rule.split('/', 1)
+            category = re.sub('[!~<>=]', '', category)
             if category in categories:
-               categories[category] += '/'.join((category,ebuild))
+               categories[category] += rule
             else:
-               categories[category] = '/'.join((category,ebuild))
+               categories[category] = rule
         for category in categories:
             with open(os.path.join(pkg_file, category), 'w', encoding='utf-8') as f:
                 f.write(categories[category])
