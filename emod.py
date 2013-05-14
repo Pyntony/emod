@@ -115,7 +115,7 @@ def read_rules(pkg_file):
 
 
     # directories go by another layout with seperate files for categories
-    # with each category file containing rules for atoms that fall into
+    # with each category file containing atoms for ebuilds that fall into
     # that category
     if os.path.isdir(pkg_file):
         rules = []
@@ -132,15 +132,15 @@ def save_rules(pkg_file, rules):
 
     # Save according to the directory format if working with directories.
     if os.path.isdir(pkg_file):
-        # seperate categories and atoms, then build a dictionary in the
-        # {category:"category/atom\ncategory/atom2\n"} format for writing
+        # seperate categories and ebuilds, then build a dictionary in the
+        # {category:"category/ebuild\ncategory/ebuild2\n"} format for writing
         categories = {}
         for rule in rules:
-            category, atom = rule.split('/')
+            category, ebuild = rule.split('/')
             if category in categories:
-               categories[category] += '/'.join((category,atom))
+               categories[category] += '/'.join((category,ebuild))
             else:
-               categories[category] = '/'.join((category,atom))
+               categories[category] = '/'.join((category,ebuild))
         for category in categories:
             with open(os.path.join(pkg_file, category), 'w', encoding='utf-8') as f:
                 f.write(categories[category])
