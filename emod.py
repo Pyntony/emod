@@ -109,9 +109,7 @@ def read_rules(pkg_file):
             for line in f.readlines():
                 if not line.isspace() and not line.startswith("#"):
                     rules.append(line)
-            # sort the results before returning them
-            rules.sort()
-            return rules
+            return sorted(rules)
 
 
     # directories go by another layout with seperate files for categories
@@ -124,8 +122,7 @@ def read_rules(pkg_file):
                 for line in f.readlines():
                     if not line.isspace() and not line.startswith("#"):
                         rules.append(line)
-        rules.sort()
-        return rules
+        return sorted(rules)
 
 def save_rules(pkg_file, rules):
     """Save rules depending on weather it is a file or directory."""
