@@ -97,7 +97,7 @@ def directory_to_file(pkg_dir):
         sys.exit("Failed to replace the current directory, are you root?")
 
 def read_rules(pkg_file):
-    """Read the rules of a package file depending on weather it is a file or directory."""
+    """Read the rules from `pkg_file`."""
     if not os.path.exists(pkg_file):
         raise IOError('Cannot find %s' % pkg_file)
 
@@ -125,7 +125,7 @@ def read_rules(pkg_file):
         return sorted(rules)
 
 def save_rules(pkg_file, rules):
-    """Save rules depending on weather it is a file or directory."""
+    """Save the `rules` to `pkg_file`."""
 
     # Save according to the directory format if working with directories.
     if os.path.isdir(pkg_file):
