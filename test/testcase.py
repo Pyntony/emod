@@ -4,6 +4,8 @@
 import unittest
 import sys
 import os
+import re
+from shutil import rmtree
 
 # Assuming that the test directory is inside the emod directory, this will allow
 # emod to be imported if the script is run either from the emod directory
@@ -153,6 +155,26 @@ class save_rules(unittest.TestCase):
             # Clean up
             testfile.close()
             os.remove(outfile)
+
+    def test_save_rules_dir(self):
+        """save_rules should save rules in a directory correctly."""
+        outfile = 'package.expressions.dir.tmp'
+
+        try:
+            # Create the directory.
+            os.mkdir(outfile, 0o755)
+
+            emod.save_rules(outfile, self.rules)
+            # Using read_rules temporarly untill i can figure out a better way
+            # to run this test.
+            self.assertEqual(emod.read_rules(outfile), self.sorted_rules)
+
+            # Make sure no filename starts with the symbols !~<>=
+            for file in os.listdir(outfile):
+                self.assertFalse(re.search('^[!~<>=]+.*$', file))
+        finally:
+            # Cleanning up
+            rmtree(outfile)
 
 if __name__ == '__main__':
     unittest.main()
