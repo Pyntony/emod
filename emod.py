@@ -187,7 +187,7 @@ parser.add_argument('--pkg-file', type=str, dest='pkg_file', metavar='file',
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    category  = re.sub('[<=>]', '', args.atom.split('/')[0])
+    category  = re.sub('[!~<=>]', '', args.atom.split('/')[0])
     pkg_style = args.style.lower()
 
     # Detect the package type if the full path is given ex (/etc/portage/package.use)
