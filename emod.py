@@ -54,7 +54,7 @@ def file_to_directory(pkg_file):
     # We first create a temporary directory not to erase the current file in
     # case of a crash or else.
     n = 0
-    while os.path.exists("%s.bkp.%d" % (pkg_file, n)):
+    while os.path.exists("%s.tmp.%d" % (pkg_file, n)):
         n += 1
     tmp_dir = "%s.tmp.%d" % (pkg_file, n)
     try:
@@ -77,7 +77,7 @@ def directory_to_file(pkg_dir):
     """Convert `pkg_dir` from a directory to a file."""
     # Create the temporary file.
     n = 0
-    while os.path.exists("%s.bkp.%d" % (pkg_dir, n)):
+    while os.path.exists("%s.tmp.%d" % (pkg_dir, n)):
         n += 1
     tmp_file = "%s.tmp.%d" % (pkg_dir, n)
     # Create the temporary file
