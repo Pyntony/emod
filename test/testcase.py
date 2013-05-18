@@ -12,7 +12,7 @@ sys.path.append(emod_path)
 import emod
 
 class cilist(unittest.TestCase):
-    def test_cilist_membership(self):
+    def test_membership(self):
         """cilist should not consider case for item membership tests."""
 
         input = emod.cilist(['foo', 'BAR', 'fooBAR'])
@@ -92,12 +92,12 @@ class read_rules(unittest.TestCase):
         rmtree(self.pkg_dir)
         os.remove(self.pkg_file)
 
-    def test_read_rules_expr_file(self):
+    def test_expression_file(self):
            """read_rules must return valid output"""
            infile = 'package.expressions.file'
            self.assertEqual(emod.read_rules(infile), self.out)
 
-    def test_read_rules_expr_dir(self):
+    def test_expression_dir(self):
         """read_rules must return valid output for directory."""
         infile = 'package.expressions.dir'
         self.assertEqual(emod.read_rules(infile), self.out)
@@ -156,7 +156,7 @@ class save_rules(unittest.TestCase):
 
     maxDiff =  None # Disable diff limit
 
-    def test_save_rules_file(self):
+    def test_save_file(self):
         """save_rules should save rules in a file correctly."""
         outfile = 'package.expressions.file.tmp'
         # Create the file so save_rules() can detect the structure type.
@@ -171,7 +171,7 @@ class save_rules(unittest.TestCase):
             testfile.close()
             os.remove(outfile)
 
-    def test_save_rules_dir(self):
+    def test_save_dir(self):
         """save_rules should save rules in a directory correctly."""
         outfile = 'package.expressions.dir.tmp'
 
@@ -218,13 +218,13 @@ class file_to_directory(unittest.TestCase):
 
         copy(data_dir+pkg_file, self.pkg_file)
 
-    def test_file_to_directory_creation(self):
+    def test_creation(self):
         """file_to_directory should create a new file."""
 
         emod.file_to_directory(self.pkg_file)
         self.assertTrue(os.path.exists(self.pkg_file))
 
-    def test_file_to_directory_type(self):
+    def test_type(self):
         """file_to_directory must create a directory."""
 
         emod.file_to_directory(self.pkg_file)
