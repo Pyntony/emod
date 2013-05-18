@@ -1,0 +1,2 @@
+sys-kernel/dracut dracut_modules_plymouth dracut_modules_lvm device-mapper
+sys-kernel/gentoo-sources symlink

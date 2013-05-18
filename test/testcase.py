@@ -192,7 +192,7 @@ class save_rules(unittest.TestCase):
             rmtree(outfile)
 
 class file_to_directory(unittest.TestCase):
-    """Unittest for the directory_to_file function."""
+    """Unittest for the file_to_directory function."""
     pkg_file = "package.use"
     data_dir = "Data/"
 
@@ -229,6 +229,35 @@ class file_to_directory(unittest.TestCase):
 
         emod.file_to_directory(self.pkg_file)
         self.assertTrue(os.path.isdir(self.pkg_file))
+
+class directory_to_file(unittest.TestCase):
+    """Unittest for the directory_to_file function."""
+    pkg_dir = "package.use.dir"
+    data_dir = "Data/"
+
+    def setUp(self):
+        """Set up by copying over a fresh test directory."""
+        pkg_dir = self.pkg_dir
+        data_dir = self.data_dir
+
+        copytree(data_dir+pkg_dir, pkg_dir)
+
+    def tearDown(self):
+        """Clean up after test method."""
+        try:
+            os.remove(self.pkg_dir)
+        except OSError:
+            rmtree(self.pkg_dir)
+
+    def test_creation(self):
+        """directory_to_file must create a file."""
+        emod.directory_to_file(self.pkg_dir)
+        self.assertTrue(os.path.exists(self.pkg_dir))
+
+    def test_type(self):
+        """directory_to_file must create a file, not a directory."""
+        emod.directory_to_file(self.pkg_dir)
+        self.assertTrue(os.path.isfile(self.pkg_dir))
 
 if __name__ == '__main__':
     unittest.main()
