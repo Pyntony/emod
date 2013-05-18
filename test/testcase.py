@@ -230,6 +230,13 @@ class file_to_directory(unittest.TestCase):
         emod.file_to_directory(self.pkg_file)
         self.assertTrue(os.path.isdir(self.pkg_file))
 
+    def test_integrity(self):
+        """test data integrity after convertion."""
+        oldrules = emod.read_rules(self.pkg_file)
+        emod.file_to_directory(self.pkg_file)
+        newrules = emod.read_rules(self.pkg_file)
+        self.assertEqual(oldrules, newrules)
+
 class directory_to_file(unittest.TestCase):
     """Unittest for the directory_to_file function."""
     pkg_dir = "package.use.dir"
@@ -258,6 +265,13 @@ class directory_to_file(unittest.TestCase):
         """directory_to_file must create a file, not a directory."""
         emod.directory_to_file(self.pkg_dir)
         self.assertTrue(os.path.isfile(self.pkg_dir))
+
+    def test_integrity(self):
+        """test data integrity after convertion."""
+        oldrules = emod.read_rules(self.pkg_dir)
+        emod.directory_to_file(self.pkg_dir)
+        newrules = emod.read_rules(self.pkg_dir)
+        self.assertEqual(oldrules, newrules)
 
 if __name__ == '__main__':
     unittest.main()
