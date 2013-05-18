@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
-import unittest
-import sys
-import os
-import re
-from shutil import rmtree
+import unittest, os, re, sys
+from shutil import rmtree, copy, copytree
 
 # Assuming that the test directory is inside the emod directory, this will allow
 # emod to be imported if the script is run either from the emod directory
@@ -75,7 +72,25 @@ class read_rules(unittest.TestCase):
            '~net-libs/libnet-1.0.2a\n',
            '~x11-libs/qt-3.3.8:3\n']
 
+    data_dir = "Data/"
+    pkg_file = "package.expressions.file"
+    pkg_dir = "package.expressions.dir"
+
     maxDiff = None # disable line limit on diffs
+
+    def setUp(self):
+        """Copy over fresh test files."""
+        pkg_file = self.pkg_file
+        pkg_dir = self.pkg_dir
+        data_dir = self.data_dir
+
+        copy(data_dir+pkg_file, pkg_file)
+        copytree(data_dir+pkg_dir, pkg_dir)
+
+    def tearDown(self):
+        """Clean up after each test."""
+        rmtree(self.pkg_dir)
+        os.remove(self.pkg_file)
 
     def test_read_rules_expr_file(self):
            """read_rules must return valid output"""
@@ -175,6 +190,45 @@ class save_rules(unittest.TestCase):
         finally:
             # Cleanning up
             rmtree(outfile)
+
+class file_to_directory(unittest.TestCase):
+    """Unittest for the directory_to_file function."""
+    pkg_file = "package.use"
+    data_dir = "Data/"
+
+    def tearDown(self):
+        """Clean up the created files after running tests."""
+        pkg_file = self.pkg_file
+
+        if os.path.exists(pkg_file):
+            try:
+                os.remove(pkg_file)
+            except OSError:
+                rmtree(pkg_file)
+
+        try:
+            rmtree(pkg_file)
+        except OSError:
+            pass
+
+    def setUp(self):
+        """Copy over a fresh data file."""
+        data_dir = self.data_dir
+        pkg_file = self.pkg_file
+
+        copy(data_dir+pkg_file, self.pkg_file)
+
+    def test_file_to_directory_creation(self):
+        """file_to_directory should create a new file."""
+
+        emod.file_to_directory(self.pkg_file)
+        self.assertTrue(os.path.exists(self.pkg_file))
+
+    def test_file_to_directory_type(self):
+        """file_to_directory must create a directory."""
+
+        emod.file_to_directory(self.pkg_file)
+        self.assertTrue(os.path.isdir(self.pkg_file))
 
 if __name__ == '__main__':
     unittest.main()
