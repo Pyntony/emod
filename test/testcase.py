@@ -4,12 +4,11 @@
 import unittest, os, re, sys
 from shutil import rmtree, copy, copytree
 
-# Assuming that the test directory is inside the emod directory, this will allow
-# emod to be imported if the script is run either from the emod directory
-# (test/testcase.py) or from the testing directory.
-emod_path = os.path.sep.join(sys.path[0].split(os.path.sep)[:-1])
-sys.path.append(emod_path)
-import emod
+sys.path.insert(0, '../src')
+try:
+    from emod import emod
+except ImportError:
+    sys.exit('Cannot import emod, are you running this script from the test/ directory?')
 
 class cilist(unittest.TestCase):
     def test_membership(self):

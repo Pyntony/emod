@@ -182,7 +182,7 @@ parser.add_argument('--pkg-file', type=str, dest='pkg_file', metavar='file',
     default='/etc/portage/package',
     help='Specify a package file/directory (for testing/debugging)')
 
-if __name__ == '__main__':
+def main():
     args = parser.parse_args()
 
     category  = re.sub('[!~<=>]', '', args.atom.split('/')[0])
@@ -288,3 +288,6 @@ if __name__ == '__main__':
         save_rules(PKG_FILE, rules)
     except IOError:
         sys.exit("Unable to write to %s, are you root?" % PKG_FILE)
+
+if __name__ == '__main__':
+    main()
