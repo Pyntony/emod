@@ -26,12 +26,13 @@ Note 2: For convenience, files are supposed to be well-written when emod is run.
 
 import os, re, sys
 from shutil import rmtree
+from codecs import open
 
 from argparse import ArgumentParser, REMAINDER
 
 __author__  = "Antoine Pinsard"
 __email__   = "antoine.pinsard@member.fsf.org"
-__version__ = "1.2"
+__version__ = "1.2.1"
 __date__    = "2013-02-19"
 
 class cilist(list):
@@ -82,7 +83,7 @@ def directory_to_file(pkg_dir):
     tmp_file = "%s.tmp.%d" % (pkg_dir, n)
     # Create the temporary file
     try:
-        open(tmp_file, 'a').close()
+        open(tmp_file, 'a', encoding='utf-8').close()
     except IOError:
         sys.exit('Unable to create file %s, are you root?' % tmp_file)
 
@@ -118,7 +119,7 @@ def read_rules(pkg_file):
     if os.path.isdir(pkg_file):
         rules = []
         for category in os.listdir(pkg_file):
-            with open(os.path.join(pkg_file, category), 'r') as f:
+            with open(os.path.join(pkg_file, category), 'r', encoding='utf-8') as f:
                 for line in f.readlines():
                     if not line.isspace() and not line.startswith("#"):
                         rules.append(line)
