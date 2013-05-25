@@ -1,7 +1,8 @@
-funtoo
+emod
 ======
+emod is a tool for managing package.\* files for portage. Its goals are simplicity,
+effeciency and ease of use.
 
-Tools for Funtoo and Gentoo
 
 **emod is still in development, please don't use it yet!**
 
@@ -18,4 +19,3 @@ Tools for Funtoo and Gentoo
  * Check rules validity according to man portage(5) (one day)
 
 *Note: the TODO list is sorted by descending priority level.*
-
