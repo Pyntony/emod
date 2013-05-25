@@ -169,11 +169,9 @@ file:
 
 # Parse arguments
 parser = ArgumentParser(description="Ease your /etc/portage/package.* edition.")
-parser.add_argument('atom', type=str, help="[<|>][=]ebuild")
-parser.add_argument('flags', type=str, help='use flags to be enabled for the atom',
+parser.add_argument('atom', type=str, help="atom")
+parser.add_argument('flags', type=str, help='flags to be enabled for the atom',
         metavar='flags', nargs=REMAINDER, default=None)
-parser.add_argument('--disable', '-d', type=str, nargs='?', metavar='flag',
-    help="A list of flags to disable for the specified atom.")
 parser.add_argument('--prune', '-p', action='store_true',
     help="Remove the custom rule of the specified atom.")
 parser.add_argument('--type', '-t', type=str, default="use", choices=PKG_TYPES,
@@ -259,19 +257,21 @@ if __name__ == '__main__':
         if args.prune:
             flags = []
 
-        # 2.Disable flags
-        if args.disable:
-            for flag in args.disable:
-                try:
-                    flags.remove(flag)
-                except ValueError:
-                    print("warning: %s is not enabled!" % flag)
-
-        # 3.Enable flags
+        # 3.Manage flags
         if args.flags:
             for flag in args.flags:
-                if flag in flags:
-                    print("warning: %s is already enabled!" % flag)
+                # Disable flags that start with %
+                if flag.startswith("%"):
+                    flag = flag[1:] # Strip the prefix
+                    matches = [f for f in flags if flag in (f, f[1:]) ]
+                    if matches:
+                        for match in matches:
+                            flags.remove(match)
+                    else:
+                        print('Warning: cannot find a match for %s' % flag)
+
+                elif flag in flags:
+                    print("Warning: %s is already enabled!" % flag)
                 else:
                     flags.append(flag)
 
@@ -287,4 +287,4 @@ if __name__ == '__main__':
     try:
         save_rules(PKG_FILE, rules)
     except IOError:
-        sys.exit("Unable to write in %s, are you root?" % PKG_FILE)
+        sys.exit("Unable to write to %s, are you root?" % PKG_FILE)
