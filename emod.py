@@ -27,7 +27,7 @@ Note 2: For convenience, files are supposed to be well-written when emod is run.
 import os, re, sys
 from shutil import rmtree
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, REMAINDER
 
 __author__  = "Antoine Pinsard"
 __email__   = "antoine.pinsard@member.fsf.org"
@@ -170,9 +170,9 @@ file:
 # Parse arguments
 parser = ArgumentParser(description="Ease your /etc/portage/package.* edition.")
 parser.add_argument('atom', type=str, help="[<|>][=]ebuild")
-parser.add_argument('--enable', '-e', type=str, nargs='+', metavar='flag',
-    help="A list of flags to enable for the specified atom.")
-parser.add_argument('--disable', '-d', type=str, nargs='+', metavar='flag',
+parser.add_argument('flags', type=str, help='use flags to be enabled for the atom',
+        metavar='flags', nargs=REMAINDER, default=None)
+parser.add_argument('--disable', '-d', type=str, nargs='?', metavar='flag',
     help="A list of flags to disable for the specified atom.")
 parser.add_argument('--prune', '-p', action='store_true',
     help="Remove the custom rule of the specified atom.")
@@ -268,8 +268,8 @@ if __name__ == '__main__':
                     print("warning: %s is not enabled!" % flag)
 
         # 3.Enable flags
-        if args.enable:
-            for flag in args.enable:
+        if args.flags:
+            for flag in args.flags:
                 if flag in flags:
                     print("warning: %s is already enabled!" % flag)
                 else:
