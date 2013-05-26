@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #-*-coding:UTF-8-*-
 
 """emod is a utility for Gentoo Linux based systems which can edit flags of a
@@ -170,8 +169,9 @@ file:
 
 # Parse arguments
 parser = ArgumentParser(description="Ease your /etc/portage/package.* edition.")
-parser.add_argument('atom', type=str, help="atom")
-parser.add_argument('flags', type=str, help='flags to be enabled for the atom',
+parser.add_argument('atom', type=str, help="Atom to be modified")
+# %% in the string is escaped, dont change or bad things will happen
+parser.add_argument('flags', type=str, help='Flags to be enabled for the atom, flags starting with %% will be deleted',
         metavar='flags', nargs=REMAINDER, default=None)
 parser.add_argument('--prune', '-p', action='store_true',
     help="Remove the custom rule of the specified atom.")
@@ -289,6 +289,3 @@ def main():
         save_rules(PKG_FILE, rules)
     except IOError:
         sys.exit("Unable to write to %s, are you root?" % PKG_FILE)
-
-if __name__ == '__main__':
-    main()
