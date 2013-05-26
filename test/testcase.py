@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
 import unittest, os, re, sys
@@ -6,7 +6,7 @@ from shutil import rmtree, copy, copytree
 
 sys.path.insert(0, '../src')
 try:
-    from emod import emod
+    import emod.core
 except ImportError:
     sys.exit('Cannot import emod, are you running this script from the test/ directory?')
 
@@ -14,7 +14,7 @@ class cilist(unittest.TestCase):
     def test_membership(self):
         """cilist should not consider case for item membership tests."""
 
-        input = emod.cilist(['foo', 'BAR', 'fooBAR'])
+        input = emod.core.cilist(['foo', 'BAR', 'fooBAR'])
         output = ['FOO', 'bar', 'foobar', 'foo', 'BAR', 'FoO', 'FOOBAR']
 
         for item in output:
@@ -94,12 +94,12 @@ class read_rules(unittest.TestCase):
     def test_expression_file(self):
            """read_rules must return valid output"""
            infile = 'package.expressions.file'
-           self.assertEqual(emod.read_rules(infile), self.out)
+           self.assertEqual(emod.core.read_rules(infile), self.out)
 
     def test_expression_dir(self):
         """read_rules must return valid output for directory."""
         infile = 'package.expressions.dir'
-        self.assertEqual(emod.read_rules(infile), self.out)
+        self.assertEqual(emod.core.read_rules(infile), self.out)
 
 class save_rules(unittest.TestCase):
     rules = ['!!<sys-apps/portage-2.1.4_rc1\n',
@@ -160,7 +160,7 @@ class save_rules(unittest.TestCase):
         outfile = 'package.expressions.file.tmp'
         # Create the file so save_rules() can detect the structure type.
         open(outfile, 'a').close()
-        emod.save_rules(outfile, self.rules)
+        emod.core.save_rules(outfile, self.rules)
         testfile = open(outfile, 'r')
 
         try:
@@ -178,10 +178,10 @@ class save_rules(unittest.TestCase):
             # Create the directory.
             os.mkdir(outfile, 0o755)
 
-            emod.save_rules(outfile, self.rules)
+            emod.core.save_rules(outfile, self.rules)
             # Using read_rules temporarly untill i can figure out a better way
             # to run this test.
-            self.assertEqual(emod.read_rules(outfile), self.sorted_rules)
+            self.assertEqual(emod.core.read_rules(outfile), self.sorted_rules)
 
             # Make sure no filename starts with the symbols !~<>=
             for file in os.listdir(outfile):
@@ -220,20 +220,20 @@ class file_to_directory(unittest.TestCase):
     def test_creation(self):
         """file_to_directory should create a new file."""
 
-        emod.file_to_directory(self.pkg_file)
+        emod.core.file_to_directory(self.pkg_file)
         self.assertTrue(os.path.exists(self.pkg_file))
 
     def test_type(self):
         """file_to_directory must create a directory."""
 
-        emod.file_to_directory(self.pkg_file)
+        emod.core.file_to_directory(self.pkg_file)
         self.assertTrue(os.path.isdir(self.pkg_file))
 
     def test_integrity(self):
         """test data integrity after convertion."""
-        oldrules = emod.read_rules(self.pkg_file)
-        emod.file_to_directory(self.pkg_file)
-        newrules = emod.read_rules(self.pkg_file)
+        oldrules = emod.core.read_rules(self.pkg_file)
+        emod.core.file_to_directory(self.pkg_file)
+        newrules = emod.core.read_rules(self.pkg_file)
         self.assertEqual(oldrules, newrules)
 
 class directory_to_file(unittest.TestCase):
@@ -257,19 +257,19 @@ class directory_to_file(unittest.TestCase):
 
     def test_creation(self):
         """directory_to_file must create a file."""
-        emod.directory_to_file(self.pkg_dir)
+        emod.core.directory_to_file(self.pkg_dir)
         self.assertTrue(os.path.exists(self.pkg_dir))
 
     def test_type(self):
         """directory_to_file must create a file, not a directory."""
-        emod.directory_to_file(self.pkg_dir)
+        emod.core.directory_to_file(self.pkg_dir)
         self.assertTrue(os.path.isfile(self.pkg_dir))
 
     def test_integrity(self):
         """test data integrity after convertion."""
-        oldrules = emod.read_rules(self.pkg_dir)
-        emod.directory_to_file(self.pkg_dir)
-        newrules = emod.read_rules(self.pkg_dir)
+        oldrules = emod.core.read_rules(self.pkg_dir)
+        emod.core.directory_to_file(self.pkg_dir)
+        newrules = emod.core.read_rules(self.pkg_dir)
         self.assertEqual(oldrules, newrules)
 
 if __name__ == '__main__':

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #-*-coding:UTF-8-*-
 
 """emod is a utility for Gentoo Linux based systems which can edit flags of a
