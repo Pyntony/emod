@@ -41,24 +41,27 @@ class Package(object):
     pkg_types = cilist(['accept_keywords', 'env', 'keywords', 'license',
         'mask', 'properties', 'unmask', 'use'])
 
-    def __init__(self, path, type='use', style='file'):
-        if not os.path.exists(path):
-            # Eventually this class will no longer need the file to actually
-            # exist, if it doesn't then we will create it.
-            raise OSError('File %s does not exist!' % path)
-
-        extension = os.path.splitext(path)[-1][1:] # grab the extension
-        if extension in self.pkg_types:
-            self.type = extension
-            self.path = path
+    def __init__(self, path, type=None):
+        if type == None or not type in self.pkg_types:
+            extension = os.path.splitext(path)[-1][1:] # grab the extension
+            if extension in self.pkg_types:
+                self.type = extension
+                self.path = path
+            else:
+                self.type = 'use'
+                self.path = path
         else:
-            self.type  = type
+            self.type = type
             self.path = '.'.join((path, type))
 
+        # Raise error if the file does not exist
+        if not os.path.exists(self.path):
+            raise OSError('File %s not found!' % self.path)
+
         # Detect package style
-        if os.path.isdir(path):
+        if os.path.isdir(self.path):
             self.style = 'directory'
-        elif os.path.isfile(path):
+        elif os.path.isfile(self.path):
             self.style = 'file'
         else:
             raise TypeError('Unknown file type for %s' % path)
@@ -159,7 +162,7 @@ parser.add_argument('flags', type=str, help='Flags to be enabled for the atom, f
         metavar='flags', nargs=REMAINDER, default=None)
 parser.add_argument('--prune', '-p', action='store_true',
     help="Remove the custom rule of the specified atom.")
-parser.add_argument('--type', '-t', type=str, default="use", choices=Package.pkg_types,
+parser.add_argument('--type', '-t', type=str, default='use', choices=Package.pkg_types,
     help="Specify the type of rule (default is use).")
 parser.add_argument('--convert', default=False, action='store_true',
         help='convert the package file from file to directory or vice versa')
@@ -169,7 +172,7 @@ parser.add_argument('--pkg-file', type=str, dest='pkg_file', metavar='file',
 
 def main():
     args = parser.parse_args()
-    pkg = Package(args.pkg_file)
+    pkg = Package(args.pkg_file, args.type)
     pkg.read_rules() # rules are stored in Package.rules
 
     if args.convert:
