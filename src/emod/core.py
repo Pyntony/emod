@@ -30,7 +30,7 @@ from difflib import Differ
 
 from argparse import ArgumentParser, REMAINDER
 
-__version__ = '1.3.0'
+__version__ = '1.3.1'
 
 class cilist(list):
     """Case insensitive list."""
@@ -168,20 +168,20 @@ def color_diff(string1, string2):
 
 # Parse arguments
 parser = ArgumentParser(description="Ease your /etc/portage/package.* edition.")
-parser.add_argument('-v', '--version', action='version',
-        version='%s %s' % (os.path.basename(sys.argv[0]), __version__))
-parser.add_argument('atom', type=str, help="Atom to be modified")
-parser.add_argument('flags', type=str, help='Flags to be enabled for the atom, flags starting with %% will be deleted',
-        metavar='flags', nargs=REMAINDER, default=None)
+parser.add_argument('atom', type=str, help="Atom to be modified", nargs='?')
+parser.add_argument('flags', type=str, help='Flags to be enabled for the atom,'\
+    'flags starting with %% will be deleted', nargs=REMAINDER, default=None)
 parser.add_argument('--prune', '-p', action='store_true',
-    help="Remove the custom rule of the specified atom.")
+    help="Remove the custom rule of the specified atom.", default=False)
 parser.add_argument('--type', '-t', type=str, default='use', choices=Package.pkg_types,
     help="Specify the type of rule (default is use).")
 parser.add_argument('--convert', default=False, action='store_true',
-        help='convert the package file from file to directory or vice versa')
+    help='convert the package file from file to directory or vice versa')
 parser.add_argument('--pkg-file', type=str, dest='pkg_file', metavar='file',
     default='/etc/portage/package',
     help='Specify a package file/directory (for testing/debugging)')
+parser.add_argument('-v', '--version', action='version',
+    version='%s %s' % (os.path.basename(sys.argv[0]), __version__))
 
 def main():
     args = parser.parse_args()
@@ -191,59 +191,69 @@ def main():
     if args.convert:
         pkg.convert()
 
-    if pkg.type in ['mask', 'unmask']:
-        # Handle particular case of package.(un)mask that do not accept flags.
-        if args.prune:
-            try:
-                pkg.rules.remove(args.atom)
-            except ValueError:
-                sys.exit("%s is not %sed." % (args.atom, pkg.type))
-        else:
-            if args.atom in pkg.rules:
-                sys.exit("%s is already %sed." % (args.atom, pkg.type))
+    if args.atom:
+        if pkg.type in ['mask', 'unmask']:
+            # Handle particular case of package.(un)mask that do not accept flags.
+            if args.prune:
+                try:
+                    pkg.rules.remove(args.atom)
+                except ValueError:
+                    sys.exit("%s is not %sed." % (args.atom, pkg.type))
             else:
-                pkg.rules.append(args.atom)
-
-    else:
-        # Retrieve the current flags if the rule exist.
-        flags = []
-        for rule in pkg.rules:
-            if rule.startswith(args.atom + " "):
-                old_rule = rule
-                flags = rule.split()[1:]
-                pkg.rules.remove(rule) # We remove the rule to update it.
-                break
-        if not flags:
-            print("No argument currently defined for %s." % args.atom)
-
-        # 1.Prune flags
-        if args.prune:
-            flags = []
-
-        # 3.Manage flags
-        if args.flags:
-            for flag in args.flags:
-                # Disable flags that start with %
-                if flag.startswith("%"):
-                    flag = flag[1:] # Strip the prefix
-                    matches = [f for f in flags if flag in (f, f[1:]) ]
-                    if matches:
-                        for match in matches:
-                            flags.remove(match)
-                    else:
-                        print('Warning: cannot find a match for %s' % flag)
-
-                elif flag in flags:
-                    print("Warning: %s is already enabled!" % flag)
+                if args.atom in pkg.rules:
+                    sys.exit("%s is already %sed." % (args.atom, pkg.type))
                 else:
-                    flags.append(flag)
+                    pkg.rules.append(args.atom)
 
-        # Update the rule
-        if flags:
-            flags.sort()
-            rule = args.atom + ' ' + ' '.join(flags) + '\n'
-            color_diff(old_rule, rule)
-            pkg.rules.append(rule)
+        else:
+            # Retrieve the current flags if the rule exist.
+            flags = []
+            for rule in pkg.rules:
+                if rule.startswith(args.atom + " "):
+                    old_rule = rule
+                    flags = rule.split()[1:]
+                    pkg.rules.remove(rule) # We remove the rule to update it.
+                    break
+
+            if not flags:
+                old_rule = None
+
+            # 1.Prune flags
+            if args.prune:
+                flags = []
+
+            # 3.Manage flags
+            if args.flags:
+                for flag in args.flags:
+                    # Disable flags that start with %
+                    if flag.startswith("%"):
+                        flag = flag[1:] # Strip the prefix
+                        matches = [f for f in flags if flag in (f, f[1:]) ]
+                        if matches:
+                            for match in matches:
+                                flags.remove(match)
+                        else:
+                            print('Warning: cannot find a match for %s' % flag)
+
+                    elif flag in flags:
+                        print("Warning: %s is already enabled!" % flag)
+                    else:
+                        flags.append(flag)
+
+            if flags and args.flags:
+                # Update the rule
+                flags.sort()
+                rule = args.atom + ' ' + ' '.join(flags) + '\n'
+                if old_rule:
+                    color_diff(old_rule, rule)
+                else:
+                    print('New rule: ' + rule, end='')
+                pkg.rules.append(rule)
+            elif flags:
+                print(old_rule, end='')
+                pkg.rules.append(old_rule)
+            else:
+                print('No rule defined for: ' + args.atom)
 
     # Save changes
     try:
