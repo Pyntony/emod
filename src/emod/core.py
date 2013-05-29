@@ -26,6 +26,7 @@ Note 2: For convenience, files are supposed to be well-written when emod is run.
 
 import os, re, sys
 from codecs import open
+from difflib import Differ
 
 from argparse import ArgumentParser, REMAINDER
 
@@ -41,22 +42,17 @@ class Package(object):
     pkg_types = cilist(['accept_keywords', 'env', 'keywords', 'license',
         'mask', 'properties', 'unmask', 'use'])
 
-    def __init__(self, path, type=None):
-        if type == None or not type in self.pkg_types:
-            extension = os.path.splitext(path)[-1][1:] # grab the extension
-            if extension in self.pkg_types:
-                self.type = extension
-                self.path = path
-            else:
-                self.type = 'use'
-                self.path = path
-        else:
-            self.type = type
-            self.path = '.'.join((path, type))
+    def __init__(self, path, type):
+        self.path = path
+        self.type = type
+
+        if not type in self.pkg_types:
+            raise TypeError('Unsupported package type: %s' % type)
 
         # Raise error if the file does not exist
         if not os.path.exists(self.path):
             raise OSError('File %s not found!' % self.path)
+
 
         # Detect package style
         if os.path.isdir(self.path):
@@ -153,6 +149,23 @@ class Package(object):
         elif self.style == 'directory':
             self.style = 'file'
 
+def color_diff(string1, string2):
+    """Print a colored diff of 2 rules."""
+    Diff = Differ()
+    diff = Diff.compare(string1.split(), string2.split())
+    result = list(diff)
+    for i in result:
+        if i[2:] == string1.split(None, 1)[0]:
+            # Exception for atoms
+            sys.stdout.write(i[2:])
+        elif i.startswith("+"):
+            sys.stdout.write(' \033[32m'+i[2:]+'\033[0m')
+        elif i.startswith("-"):
+            sys.stdout.write(' \033[31m'+i[2:]+'\033[0m')
+        else:
+            sys.stdout.write(i[1:])
+    sys.stdout.write("\n")
+
 # Parse arguments
 parser = ArgumentParser(description="Ease your /etc/portage/package.* edition.")
 parser.add_argument('-v', '--version', action='version',
@@ -196,7 +209,7 @@ def main():
         flags = []
         for rule in pkg.rules:
             if rule.startswith(args.atom + " "):
-                sys.stdout.write("Old rule: " + rule)
+                old_rule = rule
                 flags = rule.split()[1:]
                 pkg.rules.remove(rule) # We remove the rule to update it.
                 break
@@ -229,7 +242,7 @@ def main():
         if flags:
             flags.sort()
             rule = args.atom + ' ' + ' '.join(flags) + '\n'
-            sys.stdout.write("New rule: " + rule)
+            color_diff(old_rule, rule)
             pkg.rules.append(rule)
 
     # Save changes
